@@ -62,19 +62,6 @@ MAX_ERROR_COUNT = 5
 DO_FOLLOW = env_bool('DO_FOLLOW', True)
 MAIN_PROFILE = os.getenv('MAIN_PROFILE', '')
 
-# Reply configuration
-SEND_REPLY = env_bool('SEND_REPLY', False)
-RANDOM_REPLY = env_bool('RANDOM_REPLY', True)
-REPLY_MESSAGE = os.getenv('REPLY_MESSAGE', '')
-REPLY_COIN = os.getenv('REPLY_COIN', '')
-
-# Load random replies from file
-REPLIES_FILE = os.path.join(DATA_DIR, "replies.txt")
-RANDOM_REPLIES = []
-if os.path.exists(REPLIES_FILE):
-    with open(REPLIES_FILE, 'r') as f:
-        RANDOM_REPLIES = [line.strip() for line in f if line.strip()]
-
 # Profile update configuration
 UPDATE_PROFILE = env_bool('UPDATE_PROFILE', True)
 PROFILE_BIO = os.getenv('PROFILE_BIO', '')
@@ -265,8 +252,8 @@ class AccountManager:
             sql = f"""
                 INSERT INTO {DB_TABLE}
                 (email, domain, wallet_address, private_key, profile_url, username, bio,
-                 profile_picture, followed_main, reply_sent, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 profile_picture, followed_main, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 account.get('email'),
@@ -278,7 +265,6 @@ class AccountManager:
                 account.get('bio'),
                 account.get('profile_picture', False),
                 account.get('followed_main', False),
-                account.get('reply_sent', False),
                 account.get('created_at')
             )
 
@@ -446,23 +432,6 @@ class PumpFunAuth:
             return response.status_code in [200, 201]
         except Exception:
             return False
-
-    def send_reply(self, coin_address: str, message: str) -> tuple:
-        """Send a reply to a coin's comment section"""
-        url = f"{self.pump_base_url}/replies"
-        payload = {
-            "text": message,
-            "mint": coin_address
-        }
-
-        try:
-            response = self.session.post(url, json=payload, headers=self.pump_headers, timeout=30)
-            if response.status_code in [200, 201]:
-                return True, None
-            else:
-                return False, f"{response.status_code}: {response.text[:200]}"
-        except Exception as e:
-            return False, str(e)
 
     def fetch_random_image(self) -> tuple:
         """Fetch a random image from the internet and return as bytes"""
@@ -657,18 +626,6 @@ def create_account(domain_manager: DomainManager, account_manager: AccountManage
         else:
             log_warning("Follow failed (non-critical)", indent=1)
 
-    # Step 8: Send reply (if enabled)
-    reply_sent = False
-    if SEND_REPLY:
-        reply_message = random.choice(RANDOM_REPLIES) if RANDOM_REPLY else REPLY_MESSAGE
-        log_info(f"Sending reply to coin...", indent=1)
-        success, error = auth.send_reply(REPLY_COIN, reply_message)
-        if success:
-            log_success(f"Reply sent to {Fore.YELLOW}{REPLY_COIN[:8]}...{Style.RESET_ALL}", indent=1)
-            reply_sent = True
-        else:
-            log_warning(f"Reply failed: {Fore.RED}{error}{Style.RESET_ALL}", indent=1)
-
     # Success!
     profile_url = f"https://pump.fun/profile/{auth.wallet.public_key}"
     print()
@@ -687,7 +644,6 @@ def create_account(domain_manager: DomainManager, account_manager: AccountManage
         "bio": bio_used,
         "profile_picture": profile_picture_uploaded,
         "followed_main": followed,
-        "reply_sent": reply_sent,
         "created_at": datetime.now().isoformat()
     }
     account_manager.add_account(account_data)
@@ -726,8 +682,6 @@ def main():
     log_info(f"Random User-Agent: {Fore.GREEN}Enabled{Style.RESET_ALL}")
     follow_status = f"{Fore.GREEN}Enabled{Style.RESET_ALL} ({MAIN_PROFILE[:8]}...)" if DO_FOLLOW else f"{Fore.RED}Disabled{Style.RESET_ALL}"
     log_info(f"Auto-Follow: {follow_status}")
-    reply_status = f"{Fore.GREEN}Enabled{Style.RESET_ALL} ({REPLY_COIN[:8]}...)" if SEND_REPLY else f"{Fore.RED}Disabled{Style.RESET_ALL}"
-    log_info(f"Auto-Reply: {reply_status}")
     profile_status = f"{Fore.GREEN}Enabled{Style.RESET_ALL} (bio: {PROFILE_BIO})" if UPDATE_PROFILE else f"{Fore.RED}Disabled{Style.RESET_ALL}"
     log_info(f"Profile Update: {profile_status}")
     if UPDATE_PROFILE:

@@ -29,3 +29,12 @@ backup/
 
 # Claude
 .claude/
+
+# Postman
+.postman/
+
+# Multi-threaded version (released at 50 stars)
+acc_creator_multi.py
+
+# Reply feature (released at 100 stars)
+data/replies.txt
