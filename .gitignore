@@ -1,0 +1,31 @@
+# Environment variables (SENSITIVE)
+.env
+
+# Data files
+data/accounts.json
+data/domains.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup
+backup/
+
+# Claude
+.claude/

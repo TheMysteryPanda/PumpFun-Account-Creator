@@ -1,0 +1,9 @@
+requests
+pynacl
+base58
+colorama
+fake-useragent
+pymysql
+python-dotenv
+nltk
+tqdm
